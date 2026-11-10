@@ -1,0 +1,67 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build web + Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web deps
+        working-directory: web
+        run: npm ci
+
+      - name: Build web (single-file)
+        working-directory: web
+        run: npm run build
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle (Android SDK)
+        uses: android-actions/setup-android@v3
+
+      - name: Set up build-tools and platform
+        run: |
+          sdkmanager --install "build-tools;34.0.0" "platforms;android-34"
+          yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Build APK
+        working-directory: android
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          BUILD_DIR: ${{ github.workspace }}/android/build
+          WEB_DIST: ${{ github.workspace }}/web/dist
+        run: bash build.sh
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notes-apk
+          path: android/build/apk/notes.apk
+          if-no-files-found: error
+
+      - name: Release APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/build/apk/notes.apk
