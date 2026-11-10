@@ -37,18 +37,15 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle (Android SDK)
-        uses: android-actions/setup-android@v3
-
       - name: Set up build-tools and platform
         run: |
-          sdkmanager --install "build-tools;34.0.0" "platforms;android-34"
-          yes | sdkmanager --licenses > /dev/null || true
+          echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          yes | "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;34.0.0" "platforms;android-34"
 
       - name: Build APK
         working-directory: android
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
           BUILD_DIR: ${{ github.workspace }}/android/build
           WEB_DIST: ${{ github.workspace }}/web/dist
         run: bash build.sh
