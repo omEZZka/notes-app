@@ -105,8 +105,7 @@ public class MainActivity extends Activity {
             }
             String path = url.getPath();
             if (path == null || !path.startsWith("/assets/")) {
-                return new WebResourceResponse("text/plain", "utf-8", null,
-                        Collections.<String, String>emptyMap(), null);
+                return notFound();
             }
             String assetPath = path.substring("/assets/".length());
             if (assetPath.isEmpty()) assetPath = "index.html";
@@ -121,9 +120,13 @@ public class MainActivity extends Activity {
                 headers.put("Cache-Control", "no-store");
                 return new WebResourceResponse(mime, "utf-8", 200, "OK", headers, in);
             } catch (IOException e) {
-                return new WebResourceResponse("text/plain", "utf-8", null,
-                        Collections.<String, String>emptyMap(), null);
+                return notFound();
             }
+        }
+
+        private WebResourceResponse notFound() {
+            return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found",
+                    Collections.<String, String>emptyMap(), null);
         }
     }
 }
